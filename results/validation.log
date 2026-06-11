@@ -1,0 +1,4 @@
+COMMAND ./heat_cuda --n 256 --steps 500 --block-x 16 --block-y 16 --validate
+RESULT,mode=cuda_naive,N=256,steps=500,elapsed_ms=15.321,throughput_Gpt_s=2.105506,max_delta=4.835510e-02,converged=0,block=16x16,validation_max_abs_error=3.814697e-06
+COMMAND ./heat_cuda_tile --n 256 --steps 500 --tile-x 16 --tile-y 16 --validate
+RESULT,mode=cuda_shared,N=256,steps=500,elapsed_ms=12.225,throughput_Gpt_s=2.638630,max_delta=4.835510e-02,converged=0,tile=16x16,stencil_shared_kb=1.266,validation_max_abs_error=3.814697e-06

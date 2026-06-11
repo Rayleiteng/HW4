@@ -1,0 +1,11 @@
+heat_serial
+heat_cuda
+heat_cuda_tile
+cuda_device_info
+*.o
+*.out
+seq.tmp
+par.tmp
+run_k20_supp.sh
+results/serial_final.csv
+results/serial_snapshot_step_*.csv

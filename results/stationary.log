@@ -1,0 +1,1 @@
+RESULT,mode=serial,N=256,steps=46941,elapsed_ms=15303.834,throughput_Gpt_s=0.197888,max_delta=9.918213e-05,converged=1

@@ -1,0 +1,48 @@
+COMMAND ./heat_serial --n 256 --steps 8000 --eps 1e-4 --snapshot-prefix results/serial_snapshot --snapshot-steps 0,100,500,2000,8000 --output results/serial_final.csv
+RESULT,mode=serial,N=256,steps=8000,elapsed_ms=2699.844,throughput_Gpt_s=0.191170,max_delta=2.788544e-03,converged=0
+COMMAND ./heat_serial --n 512 --steps 2000
+RESULT,mode=serial,N=512,steps=2000,elapsed_ms=980.742,throughput_Gpt_s=0.530415,max_delta=1.210403e-02,converged=0
+COMMAND ./heat_serial --n 1024 --steps 2000
+RESULT,mode=serial,N=1024,steps=2000,elapsed_ms=3843.741,throughput_Gpt_s=0.543473,max_delta=1.210403e-02,converged=0
+COMMAND ./heat_serial --n 2048 --steps 2000
+RESULT,mode=serial,N=2048,steps=2000,elapsed_ms=15809.768,throughput_Gpt_s=0.529561,max_delta=1.210403e-02,converged=0
+COMMAND ./heat_cuda --n 1024 --steps 2000 --block-x 8 --block-y 8
+RESULT,mode=cuda_naive,N=1024,steps=2000,elapsed_ms=58.312,throughput_Gpt_s=35.823908,max_delta=1.210403e-02,converged=0,block=8x8
+COMMAND ./heat_cuda --n 1024 --steps 2000 --block-x 16 --block-y 16
+RESULT,mode=cuda_naive,N=1024,steps=2000,elapsed_ms=62.867,throughput_Gpt_s=33.228399,max_delta=1.210403e-02,converged=0,block=16x16
+COMMAND ./heat_cuda --n 1024 --steps 2000 --block-x 32 --block-y 32
+RESULT,mode=cuda_naive,N=1024,steps=2000,elapsed_ms=59.460,throughput_Gpt_s=35.132347,max_delta=1.210403e-02,converged=0,block=32x32
+COMMAND ./heat_cuda_tile --n 1024 --steps 2000 --tile-x 8 --tile-y 8
+RESULT,mode=cuda_shared,N=1024,steps=2000,elapsed_ms=105.182,throughput_Gpt_s=19.860581,max_delta=1.210403e-02,converged=0,tile=8x8,stencil_shared_kb=0.391
+COMMAND ./heat_cuda_tile --n 1024 --steps 2000 --tile-x 16 --tile-y 16
+RESULT,mode=cuda_shared,N=1024,steps=2000,elapsed_ms=90.313,throughput_Gpt_s=23.130382,max_delta=1.210403e-02,converged=0,tile=16x16,stencil_shared_kb=1.266
+COMMAND ./heat_cuda_tile --n 1024 --steps 2000 --tile-x 32 --tile-y 32
+RESULT,mode=cuda_shared,N=1024,steps=2000,elapsed_ms=127.187,throughput_Gpt_s=16.424380,max_delta=1.210403e-02,converged=0,tile=32x32,stencil_shared_kb=4.516
+COMMAND ./heat_cuda --n 256 --steps 2000 --block-x 16 --block-y 16
+RESULT,mode=cuda_naive,N=256,steps=2000,elapsed_ms=45.130,throughput_Gpt_s=2.859113,max_delta=1.210022e-02,converged=0,block=16x16
+COMMAND ./heat_cuda_tile --n 256 --steps 2000 --tile-x 16 --tile-y 16
+RESULT,mode=cuda_shared,N=256,steps=2000,elapsed_ms=53.452,throughput_Gpt_s=2.413966,max_delta=1.210022e-02,converged=0,tile=16x16,stencil_shared_kb=1.266
+COMMAND ./heat_cuda --n 512 --steps 2000 --block-x 16 --block-y 16
+RESULT,mode=cuda_naive,N=512,steps=2000,elapsed_ms=57.759,throughput_Gpt_s=9.006442,max_delta=1.210403e-02,converged=0,block=16x16
+COMMAND ./heat_cuda_tile --n 512 --steps 2000 --tile-x 16 --tile-y 16
+RESULT,mode=cuda_shared,N=512,steps=2000,elapsed_ms=47.565,throughput_Gpt_s=10.936509,max_delta=1.210403e-02,converged=0,tile=16x16,stencil_shared_kb=1.266
+COMMAND ./heat_cuda --n 1024 --steps 2000 --block-x 16 --block-y 16
+RESULT,mode=cuda_naive,N=1024,steps=2000,elapsed_ms=61.487,throughput_Gpt_s=33.974055,max_delta=1.210403e-02,converged=0,block=16x16
+COMMAND ./heat_cuda_tile --n 1024 --steps 2000 --tile-x 16 --tile-y 16
+RESULT,mode=cuda_shared,N=1024,steps=2000,elapsed_ms=98.639,throughput_Gpt_s=21.177897,max_delta=1.210403e-02,converged=0,tile=16x16,stencil_shared_kb=1.266
+COMMAND ./heat_cuda --n 2048 --steps 2000 --block-x 16 --block-y 16
+RESULT,mode=cuda_naive,N=2048,steps=2000,elapsed_ms=205.768,throughput_Gpt_s=40.687734,max_delta=1.210403e-02,converged=0,block=16x16
+COMMAND ./heat_cuda_tile --n 2048 --steps 2000 --tile-x 16 --tile-y 16
+RESULT,mode=cuda_shared,N=2048,steps=2000,elapsed_ms=438.868,throughput_Gpt_s=19.076863,max_delta=1.210403e-02,converged=0,tile=16x16,stencil_shared_kb=1.266
+COMMAND ./heat_cuda --n 4096 --steps 2000 --block-x 16 --block-y 16
+RESULT,mode=cuda_naive,N=4096,steps=2000,elapsed_ms=1471.319,throughput_Gpt_s=22.783418,max_delta=1.210403e-02,converged=0,block=16x16
+COMMAND ./heat_cuda_tile --n 4096 --steps 2000 --tile-x 16 --tile-y 16
+RESULT,mode=cuda_shared,N=4096,steps=2000,elapsed_ms=2226.153,throughput_Gpt_s=15.058119,max_delta=1.210403e-02,converged=0,tile=16x16,stencil_shared_kb=1.266
+COMMAND ./heat_cuda --n 256 --steps 2000 --block-x 8 --block-y 8
+RESULT,mode=cuda_naive,N=256,steps=2000,elapsed_ms=51.396,throughput_Gpt_s=2.510538,max_delta=1.210022e-02,converged=0,block=8x8
+COMMAND ./heat_cuda --n 512 --steps 2000 --block-x 8 --block-y 8
+RESULT,mode=cuda_naive,N=512,steps=2000,elapsed_ms=55.376,throughput_Gpt_s=9.394044,max_delta=1.210403e-02,converged=0,block=8x8
+COMMAND ./heat_cuda --n 2048 --steps 2000 --block-x 8 --block-y 8
+RESULT,mode=cuda_naive,N=2048,steps=2000,elapsed_ms=255.980,throughput_Gpt_s=32.706631,max_delta=1.210403e-02,converged=0,block=8x8
+COMMAND ./heat_cuda --n 4096 --steps 2000 --block-x 8 --block-y 8
+RESULT,mode=cuda_naive,N=4096,steps=2000,elapsed_ms=1497.741,throughput_Gpt_s=22.381486,max_delta=1.210403e-02,converged=0,block=8x8

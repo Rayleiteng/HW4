@@ -1,0 +1,12 @@
+CUDA device count: 1
+Device 0: NVIDIA GeForce RTX 4060 Laptop GPU
+  Compute capability: 8.9
+  SM count: 24
+  Max threads per block: 1024
+  Shared memory per block: 48 KB
+  Shared memory per SM: 100 KB
+  Memory clock: 8001000 kHz
+  Memory bus width: 128 bits
+  Core clock: 2250000 kHz
+  Approx peak FP32: 13824.00 GFLOP/s
+  Approx peak bandwidth: 256.03 GB/s
