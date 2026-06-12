@@ -61,7 +61,6 @@ struct Options {
     float r = 0.24f;
     float eps = 0.0f;
     bool validate = false;
-    std::string output;
 };
 
 Options parse_options(int argc, char** argv) {
@@ -79,7 +78,6 @@ Options parse_options(int argc, char** argv) {
             opt.validate = true;
         }
     }
-    opt.output = heat::get_arg(argc, argv, "--output", std::string());
 
     if (opt.n < 3) {
         throw std::invalid_argument("N must be at least 3");
@@ -178,12 +176,7 @@ int main(int argc, char** argv) {
             heat::solve_cpu(reference, opt.n, steps_run, opt.r, 0.0f);
             validation_error = heat::max_abs_difference(host_grid, reference);
         }
-
-        if (!opt.output.empty()) {
-            heat::write_csv_grid(opt.output, host_grid, opt.n);
-        }
-
-        std::ostringstream extra;
+std::ostringstream extra;
         extra << "block=" << opt.block_x << 'x' << opt.block_y;
         if (opt.validate) {
             extra << ",validation_max_abs_error=" << std::scientific
@@ -207,6 +200,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 }
+
 
 
 

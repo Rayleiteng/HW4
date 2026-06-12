@@ -191,6 +191,29 @@ phase come from shared memory. Corner halo elements are loaded by corner
 threads. For validation at $N=256$, 500 steps, and a 16x16 tile, the maximum
 absolute error against the CPU reference was $3.814697\times 10^{-6}$.
 
+## Halo Loading Compared with MPI Halo Exchange
+
+The shared-memory halo loading in the tiled CUDA kernel is analogous to the MPI
+halo exchange from the previous assignment, but it happens at a much smaller
+scope. In MPI, each process exchanges boundary rows or columns with neighboring
+processes through the network, so the latency is relatively high and depends on
+message startup cost and interconnect performance. In the CUDA tiled kernel,
+each thread block loads its own 1-cell halo from global memory into shared
+memory, so the latency is much lower than network communication, although it
+still costs global-memory loads and a block-level `__syncthreads()`.
+
+The bandwidth behavior is also different. MPI halo exchange consumes network
+bandwidth between nodes, while CUDA halo loading consumes GPU global-memory
+bandwidth and then reuses the loaded values from fast shared memory. This makes
+the GPU approach cheaper for repeated neighbor access inside a block.
+
+The programming effort is different as well. MPI requires explicit sends,
+receives, rank-neighbor logic, and synchronization across processes. CUDA halo
+loading requires careful shared-memory indexing, boundary checks, corner halo
+loads, and `__syncthreads()`. MPI is more complex at the distributed-system
+level, while CUDA is more sensitive to low-level indexing and memory-layout
+details.
+
 ## Tile Size Exploration
 
 All runs used $N=1024$, 2000 steps. The speedup column is relative to the best
@@ -268,7 +291,7 @@ host.
 The main performance surprise was that the shared-memory kernel did not
 outperform the naive kernel for the larger runs. This was checked against the
 CPU reference, so the issue was not a numerical error. The explanation is that
-the naive kernel is highly cache-friendly on this GPU, while the tiled kernel
+maybe the naive kernel is highly cache-friendly on this GPU, which means that caches help reducing the time to access those memories, while the tiled kernel
 pays extra synchronization and halo-loading overhead. I therefore report the
 measured behavior directly and describe the hardware-cache effect.
 
