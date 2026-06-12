@@ -185,20 +185,6 @@ struct Options {
     std::string output;
 };
 
-void usage(const char* program) {
-    std::cerr
-        << "Usage: " << program << " [options]\n"
-        << "  --n N                    grid size, default 1024\n"
-        << "  --steps STEPS            maximum time steps, default 2000\n"
-        << "  --tile-x TX              tile width, default 16\n"
-        << "  --tile-y TY              tile height, default 16\n"
-        << "  --r R                    alpha*dt/h^2, default 0.24\n"
-        << "  --eps EPS                convergence tolerance; 0 disables early stop\n"
-        << "  --check-interval K       host convergence check interval, default 50\n"
-        << "  --validate               compare final grid with CPU reference\n"
-        << "  --output FILE            write final grid CSV\n";
-}
-
 Options parse_options(int argc, char** argv) {
     Options opt;
     opt.n = heat::get_int_arg(argc, argv, "--n", opt.n);
@@ -350,10 +336,11 @@ int main(int argc, char** argv) {
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "error: " << e.what() << '\n';
-        usage(argv[0]);
         return 1;
     }
 }
+
+
 
 
 
