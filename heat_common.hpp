@@ -53,9 +53,6 @@ inline void initialize_grid(std::vector<float>& grid, int n) {
 
 inline double max_abs_difference(const std::vector<float>& a,
                                  const std::vector<float>& b) {
-    if (a.size() != b.size()) {
-        throw std::invalid_argument("grid sizes differ");
-    }
     double max_diff = 0.0;
     for (std::size_t k = 0; k < a.size(); ++k) {
         max_diff = std::max(max_diff,
@@ -95,14 +92,6 @@ inline std::vector<int> parse_int_list(const std::string& text) {
     return values;
 }
 
-inline bool has_arg(int argc, char** argv, const std::string& name) {
-    for (int i = 1; i < argc; ++i) {
-        if (argv[i] == name) {
-            return true;
-        }
-    }
-    return false;
-}
 
 inline std::string get_arg(int argc,
                            char** argv,

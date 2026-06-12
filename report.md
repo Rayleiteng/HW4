@@ -22,9 +22,9 @@ which satisfies the 2D explicit stability limit $r \le 0.25$.
 The implementation uses row-major flat arrays. The CUDA versions allocate two
 device grids, update the interior points, and swap device pointers after each
 time step. The host does not copy the whole grid during the time loop. For
-convergence checking, the CUDA kernels write one maximum update difference per
-block into `d_block_max`; the host copies only that small array every
-`check_interval` steps.
+convergence checking, a checking kernel writes one update difference per grid
+point into a device array `d_diff`; `thrust::reduce` then computes the global
+maximum on the GPU every `check_interval` steps.
 
 # Platform
 
@@ -74,12 +74,12 @@ the floating point operation count is:
 |---|---:|
 | Add four neighbors | 3 additions |
 | Compute `4*T[i,j]` | 1 multiplication |
-| Subtract center term | 1 subtraction |
-| Multiply by `r` | 1 multiplication |
+| Subtract `4*T[i,j]` | 1 subtraction |
+| Multiply by `T[i,j]` | 1 multiplication |
 | Add old center value | 1 addition |
 | Total | 7 FLOPs |
 
-Assuming no cache reuse, the memory traffic per update is 5 reads and 1 write of
+Assuming no cache reuse, the memory traffic per update is 5 reads(4 neighbors and T[i,j]) and 1 write(T_new[i,j]) of
 FP32 values:
 
 $$
@@ -195,9 +195,10 @@ this GPU.
 | 32x32 | 127.187 | 16.424 | 0.458x | 4.516 |
 
 The GPU provides 100 KB shared memory per SM and 48 KB shared memory per block.
-The largest stencil tile above uses only 4.516 KB. Even including the small
-reduction scratch buffer used during convergence checks, none of these tile
-sizes is limited by shared memory capacity.
+The largest stencil tile above uses only 4.516 KB, so none of these tile sizes
+is limited by shared memory capacity. The convergence reduction is performed by
+`thrust::reduce` over a separate device difference array, so it does not add
+extra shared-memory pressure to the tiled stencil kernel.
 
 In principle, shared-memory tiling reduces redundant global loads because a
 cell loaded into a block's shared tile can be reused by neighboring threads. On
@@ -233,10 +234,14 @@ longer laptop-GPU runs are more sensitive to memory bandwidth and power limits.
 
 # Notes on Reduction Approach
 
-I used a custom block-local max reduction rather than Thrust or CUB. The
-reduction is simple, avoids extra dependencies, and allows the update and
-maximum-difference computation to be fused in the checking kernel. The host
-copies the block maxima every `check_interval` steps, not every step.
+I used `thrust::reduce` with `thrust::maximum<float>` for the convergence
+reduction, instead of writing a hand-coded max-reduction kernel. On checking
+steps, the CUDA update kernel also writes each grid point's absolute update
+difference to `d_diff`; Thrust then reduces that device array to the global
+maximum. I chose Thrust because it is part of the CUDA toolkit, keeps the code
+shorter and less error-prone than a custom reduction, and avoids copying the
+full temperature grid back to the host. The host receives only the final scalar
+maximum every `check_interval` steps.
 
 # Files
 

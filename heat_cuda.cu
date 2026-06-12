@@ -1,7 +1,9 @@
 #include "cuda_common.cuh"
 #include "heat_common.hpp"
 
-#include <algorithm>
+#include <thrust/device_ptr.h>
+#include <thrust/functional.h>
+#include <thrust/reduce.h>
 #include <chrono>
 #include <exception>
 #include <iomanip>
@@ -27,62 +29,27 @@ __global__ void heat_naive_update(float* __restrict__ t_new,
     }
 }
 
-__global__ void heat_naive_update_reduce(float* __restrict__ t_new,
-                                         const float* __restrict__ t_old,
-                                         float* __restrict__ block_max,
-                                         int n,
-                                         float r) {
-    extern __shared__ float diff[];
+__global__ void heat_naive_update_diff(float* __restrict__ t_new,
+                                       const float* __restrict__ t_old,
+                                       float* __restrict__ diff_grid,
+                                       int n,
+                                       float r) {
+    const int j = blockIdx.x * blockDim.x + threadIdx.x;
+    const int i = blockIdx.y * blockDim.y + threadIdx.y;
 
-    const int tx = threadIdx.x;
-    const int ty = threadIdx.y;
-    const int tid = ty * blockDim.x + tx;
-    const int block_threads = blockDim.x * blockDim.y;
-
-    int reduce_size = 1;
-    while (reduce_size < block_threads) {
-        reduce_size <<= 1;
-    }
-    for (int k = tid; k < reduce_size; k += block_threads) {
-        diff[k] = 0.0f;
-    }
-    __syncthreads();
-
-    const int j = blockIdx.x * blockDim.x + tx;
-    const int i = blockIdx.y * blockDim.y + ty;
-
-    float local_diff = 0.0f;
-    if (i > 0 && i < n - 1 && j > 0 && j < n - 1) {
+    if (i < n && j < n) {
         const int k = i * n + j;
-        const float updated =
-            t_old[k] +
-            r * (t_old[k - n] + t_old[k + n] + t_old[k - 1] +
-                 t_old[k + 1] - 4.0f * t_old[k]);
-        t_new[k] = updated;
-        local_diff = fabsf(updated - t_old[k]);
-    }
-
-    diff[tid] = local_diff;
-    __syncthreads();
-
-    for (int stride = reduce_size >> 1; stride > 0; stride >>= 1) {
-        if (tid < stride) {
-            diff[tid] = fmaxf(diff[tid], diff[tid + stride]);
+        float local_diff = 0.0f;
+        if (i > 0 && i < n - 1 && j > 0 && j < n - 1) {
+            const float updated =
+                t_old[k] +
+                r * (t_old[k - n] + t_old[k + n] + t_old[k - 1] +
+                     t_old[k + 1] - 4.0f * t_old[k]);
+            t_new[k] = updated;
+            local_diff = fabsf(updated - t_old[k]);
         }
-        __syncthreads();
+        diff_grid[k] = local_diff;
     }
-
-    if (tid == 0) {
-        block_max[blockIdx.y * gridDim.x + blockIdx.x] = diff[0];
-    }
-}
-
-int next_power_of_two(int value) {
-    int result = 1;
-    while (result < value) {
-        result <<= 1;
-    }
-    return result;
 }
 
 struct Options {
@@ -146,11 +113,6 @@ Options parse_options(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     try {
-        if (heat::has_arg(argc, argv, "--help")) {
-            usage(argv[0]);
-            return 0;
-        }
-
         const Options opt = parse_options(argc, argv);
         const cudaDeviceProp prop = active_device_properties();
         const int threads_per_block = opt.block_x * opt.block_y;
@@ -163,7 +125,7 @@ int main(int argc, char** argv) {
 
         float* d_old = nullptr;
         float* d_new = nullptr;
-        float* d_block_max = nullptr;
+        float* d_diff = nullptr;
         const std::size_t bytes = host_grid.size() * sizeof(float);
         CHECK_CUDA(cudaMalloc(&d_old, bytes));
         CHECK_CUDA(cudaMalloc(&d_new, bytes));
@@ -175,14 +137,7 @@ int main(int argc, char** argv) {
         const dim3 block(opt.block_x, opt.block_y);
         const dim3 grid((opt.n + block.x - 1) / block.x,
                         (opt.n + block.y - 1) / block.y);
-        const int block_count = static_cast<int>(grid.x * grid.y);
-        CHECK_CUDA(cudaMalloc(&d_block_max,
-                              static_cast<std::size_t>(block_count) *
-                                  sizeof(float)));
-        std::vector<float> host_block_max(block_count);
-        const std::size_t reduction_shared_bytes =
-            static_cast<std::size_t>(next_power_of_two(threads_per_block)) *
-            sizeof(float);
+        CHECK_CUDA(cudaMalloc(&d_diff, bytes));
 
         int steps_run = 0;
         double final_delta = 0.0;
@@ -196,21 +151,17 @@ int main(int argc, char** argv) {
                 (opt.eps > 0.0f && ((step + 1) % opt.check_interval == 0));
 
             if (should_check) {
-                heat_naive_update_reduce<<<grid, block, reduction_shared_bytes>>>(
-                    d_new, d_old, d_block_max, opt.n, opt.r);
+                heat_naive_update_diff<<<grid, block>>>(
+                    d_new, d_old, d_diff, opt.n, opt.r);
             } else {
                 heat_naive_update<<<grid, block>>>(d_new, d_old, opt.n, opt.r);
             }
             CHECK_CUDA(cudaGetLastError());
 
             if (should_check) {
-                CHECK_CUDA(cudaMemcpy(host_block_max.data(),
-                                      d_block_max,
-                                      static_cast<std::size_t>(block_count) *
-                                          sizeof(float),
-                                      cudaMemcpyDeviceToHost));
-                final_delta = static_cast<double>(*std::max_element(
-                    host_block_max.begin(), host_block_max.end()));
+                thrust::device_ptr<float> diffs(d_diff);
+                final_delta = static_cast<double>(thrust::reduce(
+                    diffs, diffs + host_grid.size(), 0.0f, thrust::maximum<float>()));
             }
 
             std::swap(d_old, d_new);
@@ -257,7 +208,7 @@ int main(int argc, char** argv) {
                                 converged,
                                 extra.str());
 
-        CHECK_CUDA(cudaFree(d_block_max));
+        CHECK_CUDA(cudaFree(d_diff));
         CHECK_CUDA(cudaFree(d_new));
         CHECK_CUDA(cudaFree(d_old));
         return 0;

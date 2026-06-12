@@ -20,11 +20,6 @@ void usage(const char* program) {
 
 int main(int argc, char** argv) {
     try {
-        if (heat::has_arg(argc, argv, "--help")) {
-            usage(argv[0]);
-            return 0;
-        }
-
         const int n = heat::get_int_arg(argc, argv, "--n", 1024);
         const int steps = heat::get_int_arg(argc, argv, "--steps", 2000);
         const float r = heat::get_float_arg(argc, argv, "--r", 0.24f);
