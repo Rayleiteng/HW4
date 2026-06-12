@@ -21,10 +21,8 @@ which satisfies the 2D explicit stability limit $r \le 0.25$.
 
 The implementation uses row-major flat arrays. The CUDA versions allocate two
 device grids, update the interior points, and swap device pointers after each
-time step. The host does not copy the whole grid during the time loop. For
-convergence checking, a checking kernel writes one update difference per grid
-point into a device array `d_diff`; `thrust::reduce` then computes the global
-maximum on the GPU every `check_interval` steps.
+time step. The host does not copy the whole grid during the time loop.
+Convergence checking uses `thrust::reduce`, as described in Part A.
 
 # Platform
 
@@ -130,6 +128,17 @@ one grid point. For validation, the CUDA result at $N=256$, 500 steps, and a
 16x16 block differed from the CPU reference by
 $3.814697\times 10^{-6}$ in maximum absolute error.
 
+## Convergence Reduction
+
+For convergence checking, I used `thrust::reduce` with
+`thrust::maximum<float>` instead of a hand-written global max-reduction kernel.
+On checking steps, the CUDA kernel writes each grid point's absolute update
+difference to a device array `d_diff`. Then `thrust::reduce` computes the
+global maximum on the GPU. I chose Thrust because it is part of the CUDA
+toolkit, keeps the reduction code short and less error-prone, and avoids
+copying the full temperature grid back to the host. The host only receives the
+final scalar maximum every `check_interval` steps.
+
 ## Block Size Exploration
 
 All runs used $N=1024$, 2000 steps.
@@ -234,14 +243,10 @@ longer laptop-GPU runs are more sensitive to memory bandwidth and power limits.
 
 # Notes on Reduction Approach
 
-I used `thrust::reduce` with `thrust::maximum<float>` for the convergence
-reduction, instead of writing a hand-coded max-reduction kernel. On checking
-steps, the CUDA update kernel also writes each grid point's absolute update
-difference to `d_diff`; Thrust then reduces that device array to the global
-maximum. I chose Thrust because it is part of the CUDA toolkit, keeps the code
-shorter and less error-prone than a custom reduction, and avoids copying the
-full temperature grid back to the host. The host receives only the final scalar
-maximum every `check_interval` steps.
+The convergence-reduction method is described in Part A. The same
+`thrust::reduce` approach is reused for the shared-memory kernel in Part B, so
+both CUDA versions check convergence without copying the full grid back to the
+host.
 
 # Files
 
