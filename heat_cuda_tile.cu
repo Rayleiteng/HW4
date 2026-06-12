@@ -209,7 +209,11 @@ Options parse_options(int argc, char** argv) {
         heat::get_int_arg(argc, argv, "--check-interval", opt.check_interval);
     opt.r = heat::get_float_arg(argc, argv, "--r", opt.r);
     opt.eps = heat::get_float_arg(argc, argv, "--eps", opt.eps);
-    opt.validate = heat::has_arg(argc, argv, "--validate");
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--validate") {
+            opt.validate = true;
+        }
+    }
     opt.output = heat::get_arg(argc, argv, "--output", std::string());
 
     if (opt.n < 3) {
@@ -234,11 +238,6 @@ Options parse_options(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     try {
-        if (heat::has_arg(argc, argv, "--help")) {
-            usage(argv[0]);
-            return 0;
-        }
-
         const Options opt = parse_options(argc, argv);
         const cudaDeviceProp prop = active_device_properties();
         const int threads_per_block = opt.tile_x * opt.tile_y;
@@ -355,3 +354,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 }
+
+
+

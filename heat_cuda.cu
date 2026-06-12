@@ -88,7 +88,11 @@ Options parse_options(int argc, char** argv) {
         heat::get_int_arg(argc, argv, "--check-interval", opt.check_interval);
     opt.r = heat::get_float_arg(argc, argv, "--r", opt.r);
     opt.eps = heat::get_float_arg(argc, argv, "--eps", opt.eps);
-    opt.validate = heat::has_arg(argc, argv, "--validate");
+    for (int i = 1; i < argc; ++i) {
+        if (std::string(argv[i]) == "--validate") {
+            opt.validate = true;
+        }
+    }
     opt.output = heat::get_arg(argc, argv, "--output", std::string());
 
     if (opt.n < 3) {
@@ -218,3 +222,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 }
+
+
+
