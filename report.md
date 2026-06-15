@@ -1,6 +1,6 @@
 ---
 title: "Computer Architecture HW4: Introduction to GPU"
-author: "Group: A"
+author: "Teng LEI 999019730 Ziyi GU 999019607"
 date: "2026-06-11"
 geometry: margin=1in
 ---
